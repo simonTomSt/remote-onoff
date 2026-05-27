@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Relay control</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: system-ui, sans-serif;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0f172a;
+        color: #f1f5f9;
+      }
+      .card {
+        background: #1e293b;
+        border-radius: 20px;
+        padding: 40px;
+        width: 320px;
+        text-align: center;
+        box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
+      }
+      h1 {
+        font-size: 20px;
+        margin-bottom: 8px;
+        color: #94a3b8;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+      .indicator {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        margin: 28px auto;
+        transition: all 0.3s;
+        background: #374151;
+      }
+      .indicator.on {
+        background: #22c55e;
+        box-shadow: 0 0 30px #22c55e88;
+      }
+      .indicator.off {
+        background: #ef4444;
+        box-shadow: 0 0 30px #ef444488;
+      }
+      .label {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 32px;
+        letter-spacing: 4px;
+      }
+      .buttons {
+        display: flex;
+        gap: 12px;
+      }
+      button {
+        flex: 1;
+        padding: 16px;
+        border: none;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+      button:active {
+        opacity: 0.7;
+      }
+      button:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .btn-on {
+        background: #22c55e;
+        color: #fff;
+      }
+      .btn-off {
+        background: #ef4444;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Relay</h1>
+      <div class="indicator" id="dot"></div>
+      <div class="label" id="label">—</div>
+      <div class="buttons">
+        <button class="btn-on" id="btn-on" onclick="send('/on')">ON</button>
+        <button class="btn-off" id="btn-off" onclick="send('/off')">OFF</button>
+      </div>
+    </div>
+    <script>
+      async function send(url) {
+        document.getElementById("btn-on").disabled = true;
+        document.getElementById("btn-off").disabled = true;
+        const r = await fetch(url);
+        const d = await r.json();
+        update(d.status);
+      }
+
+      function update(status) {
+        const on = status === "ON";
+        document.getElementById("dot").className =
+          "indicator " + (on ? "on" : "off");
+        document.getElementById("label").textContent = status;
+        document.getElementById("btn-on").disabled = on;
+        document.getElementById("btn-off").disabled = !on;
+      }
+
+      // poll co 5 sekund żeby sync status
+      async function poll() {
+        const r = await fetch("/status");
+        const d = await r.json();
+        update(d.status);
+      }
+
+      poll();
+      setInterval(poll, 5000);
+    </script>
+  </body>
+</html>
