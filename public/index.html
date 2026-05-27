@@ -5,125 +5,318 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Relay control</title>
     <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
         font-family: system-ui, sans-serif;
         min-height: 100dvh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         background: #0f172a;
         color: #f1f5f9;
       }
+
+      /* ── tabs ── */
+      .tabs {
+        display: flex;
+        gap: 4px;
+        padding: 20px 20px 0;
+        border-bottom: 1px solid #1e293b;
+      }
+      .tab-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px 10px 0 0;
+        background: #1e293b;
+        color: #64748b;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        transition: color 0.2s, background 0.2s;
+      }
+      .tab-btn.active {
+        background: #0f172a;
+        color: #f1f5f9;
+        border-bottom: 2px solid #3b82f6;
+      }
+      .tab-panel { display: none; padding: 32px 20px; max-width: 480px; margin: 0 auto; }
+      .tab-panel.active { display: block; }
+
+      /* ── manual tab ── */
       .card {
         background: #1e293b;
         border-radius: 20px;
         padding: 40px;
-        width: 320px;
         text-align: center;
-        box-shadow: 0 4px 32px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 4px 32px rgba(0,0,0,0.4);
       }
-      h1 {
-        font-size: 20px;
-        margin-bottom: 8px;
-        color: #94a3b8;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-      }
+      h1 { font-size: 18px; color: #94a3b8; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
       .indicator {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        margin: 28px auto;
-        transition: all 0.3s;
-        background: #374151;
+        width: 80px; height: 80px; border-radius: 50%;
+        margin: 28px auto; transition: all 0.3s; background: #374151;
       }
-      .indicator.on {
-        background: #22c55e;
-        box-shadow: 0 0 30px #22c55e88;
-      }
-      .indicator.off {
-        background: #ef4444;
-        box-shadow: 0 0 30px #ef444488;
-      }
-      .label {
-        font-size: 28px;
-        font-weight: 700;
-        margin-bottom: 32px;
-        letter-spacing: 4px;
-      }
-      .buttons {
-        display: flex;
-        gap: 12px;
-      }
+      .indicator.on  { background: #22c55e; box-shadow: 0 0 30px #22c55e88; }
+      .indicator.off { background: #ef4444; box-shadow: 0 0 30px #ef444488; }
+      .relay-label { font-size: 28px; font-weight: 700; margin-bottom: 32px; letter-spacing: 4px; }
+      .buttons { display: flex; gap: 12px; }
       button {
-        flex: 1;
-        padding: 16px;
-        border: none;
-        border-radius: 12px;
-        font-size: 18px;
-        font-weight: 600;
-        cursor: pointer;
+        flex: 1; padding: 16px; border: none; border-radius: 12px;
+        font-size: 18px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      }
+      button:active { opacity: 0.7; }
+      button:disabled { opacity: 0.3; cursor: default; }
+      .btn-on  { background: #22c55e; color: #fff; }
+      .btn-off { background: #ef4444; color: #fff; }
+
+      /* ── scheduler tab ── */
+      .section-title {
+        font-size: 13px; font-weight: 700; letter-spacing: 2px;
+        text-transform: uppercase; color: #64748b; margin-bottom: 14px;
+      }
+      .scheduler-form {
+        background: #1e293b; border-radius: 16px; padding: 24px;
+        display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px;
+      }
+      .form-row { display: flex; gap: 10px; align-items: center; }
+      .form-row label { font-size: 13px; color: #94a3b8; white-space: nowrap; }
+      input[type="number"], select {
+        background: #0f172a; border: 1px solid #334155; color: #f1f5f9;
+        border-radius: 8px; padding: 8px 12px; font-size: 15px; flex: 1; width: 100%;
+      }
+      .btn-save {
+        background: #3b82f6; color: #fff; border: none; border-radius: 10px;
+        padding: 12px; font-size: 15px; font-weight: 600; cursor: pointer;
         transition: opacity 0.2s;
       }
-      button:active {
-        opacity: 0.7;
+      .btn-save:hover { opacity: 0.85; }
+
+      .queue-list { display: flex; flex-direction: column; gap: 10px; }
+      .queue-item {
+        background: #1e293b; border-radius: 12px; padding: 14px 16px;
+        display: flex; justify-content: space-between; align-items: center; gap: 12px;
       }
-      button:disabled {
-        opacity: 0.3;
-        cursor: default;
+      .queue-item .action-badge {
+        font-size: 13px; font-weight: 700; letter-spacing: 1px;
+        padding: 3px 10px; border-radius: 6px;
       }
-      .btn-on {
-        background: #22c55e;
-        color: #fff;
+      .badge-on  { background: #166534; color: #86efac; }
+      .badge-off { background: #7f1d1d; color: #fca5a5; }
+      .queue-item .when { font-size: 13px; color: #94a3b8; }
+      .queue-item .countdown { font-size: 12px; color: #475569; }
+      .btn-del {
+        background: #334155; border: none; color: #94a3b8; border-radius: 8px;
+        padding: 6px 12px; cursor: pointer; font-size: 13px; flex-shrink: 0;
       }
-      .btn-off {
-        background: #ef4444;
-        color: #fff;
+      .btn-del:hover { background: #7f1d1d; color: #fca5a5; }
+      .empty { color: #475569; font-size: 14px; text-align: center; padding: 20px 0; }
+
+      /* ── logs tab ── */
+      .uptime-card {
+        background: #1e293b; border-radius: 16px; padding: 20px 24px;
+        margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;
       }
+      .uptime-label { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+      .uptime-value { font-size: 22px; font-weight: 700; color: #38bdf8; font-variant-numeric: tabular-nums; }
+      .log-list { display: flex; flex-direction: column; gap: 8px; }
+      .log-item {
+        background: #1e293b; border-radius: 10px; padding: 12px 16px;
+        display: flex; justify-content: space-between; align-items: center;
+      }
+      .log-action { font-size: 13px; font-weight: 700; }
+      .log-action.on  { color: #22c55e; }
+      .log-action.off { color: #ef4444; }
+      .log-action.scheduler { color: #a78bfa; }
+      .log-time { font-size: 12px; color: #475569; }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h1>Relay</h1>
-      <div class="indicator" id="dot"></div>
-      <div class="label" id="label">—</div>
-      <div class="buttons">
-        <button class="btn-on" id="btn-on" onclick="send('/on')">ON</button>
-        <button class="btn-off" id="btn-off" onclick="send('/off')">OFF</button>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('manual')">Sterowanie</button>
+      <button class="tab-btn" onclick="switchTab('scheduler')">Scheduler</button>
+      <button class="tab-btn" onclick="switchTab('logs')">Logi</button>
+    </div>
+
+    <!-- TAB 1: Manual -->
+    <div id="tab-manual" class="tab-panel active">
+      <div class="card">
+        <h1>Relay</h1>
+        <div class="indicator" id="dot"></div>
+        <div class="relay-label" id="label">—</div>
+        <div class="buttons">
+          <button class="btn-on"  id="btn-on"  onclick="send('/on')">ON</button>
+          <button class="btn-off" id="btn-off" onclick="send('/off')">OFF</button>
+        </div>
       </div>
     </div>
+
+    <!-- TAB 2: Scheduler -->
+    <div id="tab-scheduler" class="tab-panel">
+      <div class="section-title">Dodaj zdarzenie</div>
+      <div class="scheduler-form">
+        <div class="form-row">
+          <label>Akcja</label>
+          <select id="sched-action">
+            <option value="OFF">OFF (wyłącz)</option>
+            <option value="ON">ON (włącz)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Za (godz.)</label>
+          <input type="number" id="sched-h" min="0" value="0" style="width:70px;flex:none" />
+          <label>min</label>
+          <input type="number" id="sched-m" min="0" max="59" value="30" style="width:70px;flex:none" />
+        </div>
+        <button class="btn-save" onclick="addSchedule()">Dodaj do kolejki</button>
+      </div>
+
+      <div class="section-title">Kolejka zdarzeń</div>
+      <div class="queue-list" id="queue-list"><div class="empty">Brak zaplanowanych zdarzeń</div></div>
+    </div>
+
+    <!-- TAB 3: Logs -->
+    <div id="tab-logs" class="tab-panel">
+      <div class="uptime-card">
+        <div>
+          <div class="uptime-label">Czas pracy</div>
+          <div class="uptime-value" id="uptime-display">—</div>
+        </div>
+        <div style="text-align:right">
+          <div class="uptime-label">Status</div>
+          <div id="status-badge" style="font-size:16px;font-weight:700;margin-top:4px">—</div>
+        </div>
+      </div>
+      <div class="section-title">Zdarzenia</div>
+      <div class="log-list" id="log-list"><div class="empty">Brak zdarzeń</div></div>
+    </div>
+
     <script>
+      let currentTab = 'manual';
+
+      function switchTab(name) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + name).classList.add('active');
+        document.querySelectorAll('.tab-btn')[['manual','scheduler','logs'].indexOf(name)].classList.add('active');
+        currentTab = name;
+        if (name === 'scheduler') renderQueue();
+        if (name === 'logs') renderLogs();
+      }
+
+      // ── manual ──
       async function send(url) {
-        document.getElementById("btn-on").disabled = true;
-        document.getElementById("btn-off").disabled = true;
+        document.getElementById('btn-on').disabled = true;
+        document.getElementById('btn-off').disabled = true;
         const r = await fetch(url);
         const d = await r.json();
-        update(d.status);
+        updateStatus(d.status);
       }
 
-      function update(status) {
-        const on = status === "ON";
-        document.getElementById("dot").className =
-          "indicator " + (on ? "on" : "off");
-        document.getElementById("label").textContent = status;
-        document.getElementById("btn-on").disabled = on;
-        document.getElementById("btn-off").disabled = !on;
+      function updateStatus(status, uptimeMs) {
+        const on = status === 'ON';
+        document.getElementById('dot').className = 'indicator ' + (on ? 'on' : 'off');
+        document.getElementById('label').textContent = status;
+        document.getElementById('btn-on').disabled = on;
+        document.getElementById('btn-off').disabled = !on;
+        if (document.getElementById('status-badge')) {
+          document.getElementById('status-badge').textContent = status;
+          document.getElementById('status-badge').style.color = on ? '#22c55e' : '#ef4444';
+        }
+        if (uptimeMs !== undefined) {
+          document.getElementById('uptime-display').textContent = formatDuration(uptimeMs);
+        }
       }
 
-      // poll co 5 sekund żeby sync status
-      async function poll() {
-        const r = await fetch("/status");
-        const d = await r.json();
-        update(d.status);
+      async function pollStatus() {
+        try {
+          const r = await fetch('/status');
+          const d = await r.json();
+          updateStatus(d.status, d.uptimeMs);
+        } catch {}
       }
 
-      poll();
-      setInterval(poll, 5000);
+      // ── scheduler ──
+      let scheduleData = [];
+
+      async function renderQueue() {
+        const r = await fetch('/scheduler');
+        scheduleData = await r.json();
+        const el = document.getElementById('queue-list');
+        if (scheduleData.length === 0) {
+          el.innerHTML = '<div class="empty">Brak zaplanowanych zdarzeń</div>';
+          return;
+        }
+        el.innerHTML = scheduleData.map(job => {
+          const ms = job.at - Date.now();
+          return `<div class="queue-item">
+            <span class="action-badge ${job.action === 'ON' ? 'badge-on' : 'badge-off'}">${job.action}</span>
+            <div>
+              <div class="when">${new Date(job.at).toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'})}</div>
+              <div class="countdown">za ${formatDuration(Math.max(0, ms))}</div>
+            </div>
+            <button class="btn-del" onclick="deleteJob(${job.id})">Usuń</button>
+          </div>`;
+        }).join('');
+      }
+
+      async function addSchedule() {
+        const h = parseInt(document.getElementById('sched-h').value) || 0;
+        const m = parseInt(document.getElementById('sched-m').value) || 0;
+        const delayMs = (h * 60 + m) * 60 * 1000;
+        if (delayMs <= 0) { alert('Podaj czas > 0'); return; }
+        const action = document.getElementById('sched-action').value;
+        await fetch('/scheduler', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ delayMs, action })
+        });
+        renderQueue();
+      }
+
+      async function deleteJob(id) {
+        await fetch('/scheduler/' + id, { method: 'DELETE' });
+        renderQueue();
+      }
+
+      // ── logs ──
+      async function renderLogs() {
+        const r = await fetch('/logs');
+        const logs = await r.json();
+        const el = document.getElementById('log-list');
+        if (logs.length === 0) {
+          el.innerHTML = '<div class="empty">Brak zdarzeń</div>';
+          return;
+        }
+        el.innerHTML = logs.map(l => {
+          const isOn = l.action === 'ON' || l.action.includes('ON');
+          const isOff = l.action === 'OFF' || l.action.includes('OFF');
+          const cls = isOn ? 'on' : isOff ? 'off' : 'scheduler';
+          return `<div class="log-item">
+            <span class="log-action ${cls}">${l.action}</span>
+            <span class="log-time">${new Date(l.time).toLocaleString('pl-PL')}</span>
+          </div>`;
+        }).join('');
+      }
+
+      // ── utils ──
+      function formatDuration(ms) {
+        const totalS = Math.floor(ms / 1000);
+        const h = Math.floor(totalS / 3600);
+        const m = Math.floor((totalS % 3600) / 60);
+        const s = totalS % 60;
+        if (h > 0) return `${h}h ${m}m`;
+        if (m > 0) return `${m}m ${s}s`;
+        return `${s}s`;
+      }
+
+      // ── polling ──
+      pollStatus();
+      setInterval(pollStatus, 5000);
+      setInterval(() => {
+        if (currentTab === 'scheduler') renderQueue();
+      }, 5000);
+      setInterval(() => {
+        if (currentTab === 'logs') renderLogs();
+      }, 5000);
     </script>
   </body>
 </html>
