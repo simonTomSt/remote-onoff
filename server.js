@@ -7,13 +7,13 @@ const PORT = 3000;
 const GPIO_PIN = 17;
 
 const Gpio = pigpio.Gpio;
-const relay = new Gpio(GPIO_PIN, { mode: Gpio.OUTPUT });
+const relay = new Gpio(GPIO_PIN, { mode: Gpio.OUTPUT, pullUpDown: Gpio.PUD_OFF });
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 let isOn = false;
-relay.digitalWrite(1);
+relay.digitalWrite(0);
 
 let uptimeStart = null;
 let totalUptimeMs = 0;
@@ -29,12 +29,12 @@ function addLog(action) {
 function setRelay(on) {
   if (on === isOn) return;
   if (on) {
-    relay.digitalWrite(0);
+    relay.digitalWrite(1);
     isOn = true;
     uptimeStart = Date.now();
     addLog("ON");
   } else {
-    relay.digitalWrite(1);
+    relay.digitalWrite(0);
     if (uptimeStart !== null) {
       totalUptimeMs += Date.now() - uptimeStart;
       uptimeStart = null;
@@ -100,7 +100,7 @@ app.delete("/scheduler/:id", (req, res) => {
 });
 
 process.on("SIGINT", () => {
-  relay.digitalWrite(1);
+  relay.digitalWrite(0);
   pigpio.terminate();
   process.exit();
 });
